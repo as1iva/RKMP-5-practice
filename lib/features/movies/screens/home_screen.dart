@@ -110,13 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.5,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               StatisticsCard(
                 title: 'Всего фильмов',
@@ -124,18 +119,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.movie_creation,
                 color: Colors.indigo,
               ),
+              const SizedBox(height: 12),
               StatisticsCard(
                 title: 'Просмотрено',
                 value: watchedMovies.toString(),
                 icon: Icons.check_circle,
                 color: Colors.green,
               ),
+              const SizedBox(height: 12),
               StatisticsCard(
                 title: 'Хочу посмотреть',
                 value: toWatch.toString(),
                 icon: Icons.schedule,
                 color: Colors.orange,
               ),
+              const SizedBox(height: 12),
               StatisticsCard(
                 title: 'Средняя оценка',
                 value: averageRating.toStringAsFixed(1),
