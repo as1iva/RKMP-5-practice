@@ -23,35 +23,22 @@ class MovieTile extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Оценить фильм'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              movie.title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(10, (index) {
-                final rating = index + 1;
-                return IconButton(
-                  icon: Icon(
-                    rating <= (movie.rating ?? 0)
-                        ? Icons.star
-                        : Icons.star_border,
-                    color: Colors.amber,
-                    size: 28,
-                  ),
-                  onPressed: () {
-                    onRate(rating);
-                    Navigator.pop(context);
-                  },
-                );
-              }),
-            ),
-          ],
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(10, (index) {
+            final rating = index + 1;
+            final active = rating <= (movie.rating ?? 0);
+            return IconButton(
+              icon: Icon(
+                active ? Icons.star : Icons.star_border,
+                color: Colors.amber,
+              ),
+              onPressed: () {
+                onRate(rating);
+                Navigator.pop(context);
+              },
+            );
+          }),
         ),
         actions: [
           TextButton(
@@ -104,56 +91,55 @@ class MovieTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
+      color: cs.surface,
       child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () => _navigateToDetail(context),
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // ------ Левая круглая цветная иконка (без иконок по жанрам) + БЕЙДЖ СТАТУСА ------
               Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 60,
-                    height: 85,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
+                      shape: BoxShape.circle,
                       gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          movie.isWatched
-                              ? Colors.green.shade400
-                              : Colors.orange.shade400,
-                          movie.isWatched
-                              ? Colors.green.shade700
-                              : Colors.orange.shade700,
-                        ],
+                        colors: movie.isWatched
+                            ? [Colors.green.shade400, Colors.green.shade700]
+                            : [Colors.orange.shade400, Colors.orange.shade700],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(2, 2),
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 6,
+                          offset: const Offset(2, 3),
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.movie,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        size: 32,
-                      ),
+                    child: const Icon(
+                      Icons.movie,
+                      color: Colors.white,
+                      size: 28,
                     ),
                   ),
                   Positioned(
-                    top: 4,
-                    right: 4,
+                    top: -2,
+                    right: -2,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      width: 20,
+                      height: 20,
                       decoration: BoxDecoration(
                         color: movie.isWatched ? Colors.green : Colors.orange,
                         shape: BoxShape.circle,
@@ -162,72 +148,73 @@ class MovieTile extends StatelessWidget {
                       child: Icon(
                         movie.isWatched ? Icons.check : Icons.schedule,
                         color: Colors.white,
-                        size: 14,
+                        size: 12,
                       ),
                     ),
                   ),
                 ],
               ),
+
               const SizedBox(width: 16),
+
+              // ------ Центр: текстовая информация ------
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       movie.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        color: cs.onSurface,
                         decoration: movie.isWatched
                             ? TextDecoration.lineThrough
                             : null,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       movie.director,
-                      style: TextStyle(
-                        fontStyle: FontStyle.italic,
-                        color: Colors.grey[700],
-                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: cs.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
+                            color: cs.primaryContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             movie.genre,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.indigo.shade700,
+                              color: cs.onPrimaryContainer,
                             ),
                           ),
                         ),
                         if (movie.rating != null) ...[
                           const SizedBox(width: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.star,
-                                  color: Colors.amber, size: 16),
-                              const SizedBox(width: 2),
-                              Text(
-                                movie.rating.toString(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                          const Icon(Icons.star, size: 14, color: Colors.amber),
+                          Text(
+                            movie.rating.toString(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ],
@@ -235,35 +222,35 @@ class MovieTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Column(
+
+              // ------ Справа: кнопки в ОДИН РЯД ------
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
+                    tooltip: movie.isWatched
+                        ? 'Отметить как непросмотренный'
+                        : 'Просмотрен',
                     icon: Icon(
                       movie.isWatched
-                          ? Icons.undo
+                          ? Icons.check_circle
                           : Icons.check_circle_outline,
-                      color: movie.isWatched ? Colors.grey : Colors.green,
+                      color:
+                      movie.isWatched ? Colors.greenAccent : Colors.green,
                     ),
                     onPressed: () => onToggleWatched(!movie.isWatched),
-                    tooltip: movie.isWatched ? 'Вернуть' : 'Просмотрено',
                   ),
                   IconButton(
-                    icon: Icon(
-                      movie.rating == null
-                          ? Icons.star_border
-                          : Icons.star,
-                      color: Colors.amber,
-                    ),
-                    onPressed: () => _showRatingDialog(context),
                     tooltip: 'Оценить',
+                    icon: const Icon(Icons.star, color: Colors.amber),
+                    onPressed: () => _showRatingDialog(context),
+                  ),
+                  IconButton(
+                    tooltip: 'Удалить',
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => _showDeleteConfirmation(context),
                   ),
                 ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () => _showDeleteConfirmation(context),
-                tooltip: 'Удалить',
               ),
             ],
           ),
