@@ -9,6 +9,7 @@ class Movie {
   int? rating;
   final DateTime dateAdded;
   DateTime? dateWatched;
+  final String? imageUrl;
 
   Movie({
     required this.id,
@@ -21,6 +22,7 @@ class Movie {
     this.rating,
     DateTime? dateAdded,
     this.dateWatched,
+    this.imageUrl
   }) : dateAdded = dateAdded ?? DateTime.now();
 
   Movie copyWith({
@@ -34,6 +36,7 @@ class Movie {
     int? rating,
     DateTime? dateAdded,
     DateTime? dateWatched,
+    String? imageUrl,
   }) {
     return Movie(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class Movie {
       rating: rating ?? this.rating,
       dateAdded: dateAdded ?? this.dateAdded,
       dateWatched: dateWatched ?? this.dateWatched,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

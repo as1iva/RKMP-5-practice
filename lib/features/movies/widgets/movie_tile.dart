@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 import 'package:fadeev_practice_5/features/movies/screens/movie_detail_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MovieTile extends StatelessWidget {
   final Movie movie;
@@ -106,34 +107,49 @@ class MovieTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ------ Левая круглая цветная иконка (без иконок по жанрам) + БЕЙДЖ СТАТУСА ------
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: movie.isWatched
-                            ? [Colors.green.shade400, Colors.green.shade700]
-                            : [Colors.orange.shade400, Colors.orange.shade700],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
-                          blurRadius: 6,
-                          offset: const Offset(2, 3),
+                  if (movie.imageUrl != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: movie.imageUrl != null
+                          ? CachedNetworkImage(
+                        imageUrl: movie.imageUrl!,
+                        width: 60,
+                        height: 85,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          width: 60,
+                          height: 85,
+                          color: Colors.grey[900],
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
                         ),
-                      ],
+                        errorWidget: (context, url, error) => Container(
+                          width: 60,
+                          height: 85,
+                          color: Colors.grey[800],
+                          child: const Icon(
+                            Icons.movie_outlined,
+                            color: Colors.white70,
+                            size: 32,
+                          ),
+                        ),
+                      )
+                          : Container(
+                        width: 60,
+                        height: 85,
+                        color: Colors.grey[800],
+                        child: const Icon(
+                          Icons.movie_outlined,
+                          color: Colors.white70,
+                          size: 32,
+                        ),
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.movie,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
+
                   Positioned(
                     top: -2,
                     right: -2,
@@ -157,7 +173,6 @@ class MovieTile extends StatelessWidget {
 
               const SizedBox(width: 16),
 
-              // ------ Центр: текстовая информация ------
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +238,6 @@ class MovieTile extends StatelessWidget {
                 ),
               ),
 
-              // ------ Справа: кнопки в ОДИН РЯД ------
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

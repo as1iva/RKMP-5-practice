@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:fadeev_practice_5/features/service/image_service.dart';
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 
 class MoviesContainer extends StatefulWidget {
@@ -24,11 +24,14 @@ class MoviesContainer extends StatefulWidget {
 
 class _MoviesContainerState extends State<MoviesContainer> {
   final List<Movie> _movies = [];
+  final ImageService _imageService = ImageService();
 
-  void _addMovie(Movie movie) {
-    setState(() {
-      _movies.add(movie);
-    });
+
+  void _addMovie(Movie movie) async {
+    final imageUrl = await _imageService.getNextMovieImage();
+    final withImage = movie.copyWith(imageUrl: imageUrl);
+
+    setState(() => _movies.add(withImage));
   }
 
   void _updateMovie(Movie updatedMovie) {
@@ -40,7 +43,13 @@ class _MoviesContainerState extends State<MoviesContainer> {
     });
   }
 
-  void _deleteMovie(String id) {
+  void _deleteMovie(String id) async {
+    final movie = _movies.firstWhere((movie) => movie.id == id);
+
+    if (movie.imageUrl != null) {
+      await _imageService.releaseImage(movie.imageUrl!);
+    }
+
     setState(() {
       _movies.removeWhere((movie) => movie.id == id);
     });
