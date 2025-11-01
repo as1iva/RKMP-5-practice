@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
-import 'package:fadeev_practice_5/shared/constants.dart';
 
 class MovieFormScreen extends StatefulWidget {
-  final Function(Movie) onSave;
-  final Movie? movie;
+  final void Function(Movie movie) onSave;
 
-  const MovieFormScreen({
-    super.key,
-    required this.onSave,
-    this.movie,
-  });
+  const MovieFormScreen({super.key, required this.onSave});
 
   @override
   State<MovieFormScreen> createState() => _MovieFormScreenState();
@@ -18,174 +13,143 @@ class MovieFormScreen extends StatefulWidget {
 
 class _MovieFormScreenState extends State<MovieFormScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final _titleController = TextEditingController();
   final _directorController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _genreController = TextEditingController();
   final _durationController = TextEditingController();
-  String _selectedGenre = AppConstants.genres.first;
+  final _descController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.movie != null) {
-      _titleController.text = widget.movie!.title;
-      _directorController.text = widget.movie!.director;
-      _selectedGenre = widget.movie!.genre;
-      _descriptionController.text = widget.movie!.description ?? '';
-      _durationController.text =
-          widget.movie!.durationMinutes?.toString() ?? '';
-    }
-  }
+  bool _isWatched = false;
+  int? _rating;
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _directorController.dispose();
-    _descriptionController.dispose();
-    _durationController.dispose();
-    super.dispose();
-  }
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-  void _saveMovie() {
-    if (_formKey.currentState!.validate()) {
-      final movie = widget.movie?.copyWith(
-        title: _titleController.text.trim(),
-        director: _directorController.text.trim(),
-        genre: _selectedGenre,
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        durationMinutes: _durationController.text.trim().isEmpty
-            ? null
-            : int.tryParse(_durationController.text.trim()),
-      ) ??
-          Movie(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            title: _titleController.text.trim(),
-            director: _directorController.text.trim(),
-            genre: _selectedGenre,
-            description: _descriptionController.text.trim().isEmpty
-                ? null
-                : _descriptionController.text.trim(),
-            durationMinutes: _durationController.text.trim().isEmpty
-                ? null
-                : int.tryParse(_durationController.text.trim()),
-          );
-      widget.onSave(movie);
-    }
+    final duration = _durationController.text.trim().isEmpty
+        ? null
+        : int.tryParse(_durationController.text.trim());
+
+    final movie = Movie(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: _titleController.text.trim(),
+      director: _directorController.text.trim().isEmpty
+          ? 'Не указан'
+          : _directorController.text.trim(),
+      genre: _genreController.text.trim().isEmpty
+          ? 'Без жанра'
+          : _genreController.text.trim(),
+      description: _descController.text.trim().isEmpty
+          ? null
+          : _descController.text.trim(),
+      durationMinutes: duration,
+      isWatched: _isWatched,
+      rating: _rating,
+      dateAdded: DateTime.now(),
+      dateWatched: _isWatched ? DateTime.now() : null,
+      imageUrl: null,
+    );
+
+    widget.onSave(movie);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.movie != null;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title:
-        Text(isEditing ? 'Редактировать фильм' : 'Добавить фильм'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Добавить фильм'),
+        backgroundColor: cs.inversePrimary,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Название фильма *',
-                  hintText: 'Введите название',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.movie),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Пожалуйста, введите название фильма';
-                  }
-                  return null;
-                },
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Название',
+                      prefixIcon: Icon(Icons.movie_creation_outlined),
+                    ),
+                    validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Введите название' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _directorController,
+                    decoration: const InputDecoration(
+                      labelText: 'Режиссёр',
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _genreController,
+                    decoration: const InputDecoration(
+                      labelText: 'Жанр',
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _durationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Длительность (мин)',
+                      prefixIcon: Icon(Icons.timer_outlined),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _descController,
+                    decoration: const InputDecoration(
+                      labelText: 'Описание',
+                      prefixIcon: Icon(Icons.notes_outlined),
+                    ),
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _isWatched,
+                        onChanged: (v) => setState(() => _isWatched = v ?? false),
+                      ),
+                      const Text('Просмотрено'),
+                      const Spacer(),
+                      DropdownButton<int>(
+                        value: _rating,
+                        hint: const Text('Оценка'),
+                        items: List.generate(
+                          5,
+                              (i) => DropdownMenuItem(
+                            value: i + 1,
+                            child: Text('${i + 1}'),
+                          ),
+                        ),
+                        onChanged: (v) => setState(() => _rating = v),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _submit,
+                      icon: const Icon(Icons.save),
+                      label: const Text('Сохранить'),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _directorController,
-                decoration: const InputDecoration(
-                  labelText: 'Режиссёр *',
-                  hintText: 'Введите имя режиссёра',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Пожалуйста, введите режиссёра';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Жанр *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category),
-                ),
-                value: _selectedGenre,
-                items: AppConstants.genres.map((genre) {
-                  return DropdownMenuItem(
-                    value: genre,
-                    child: Text(genre),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedGenre = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _durationController,
-                decoration: const InputDecoration(
-                  labelText: 'Длительность (в минутах)',
-                  hintText: 'Введите длительность фильма',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.timer),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.trim().isNotEmpty) {
-                    if (int.tryParse(value.trim()) == null) {
-                      return 'Введите корректное число';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Описание',
-                  hintText: 'Краткое описание фильма',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
-                ),
-                maxLines: 4,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _saveMovie,
-                icon: Icon(isEditing ? Icons.save : Icons.add),
-                label: Text(isEditing
-                    ? 'Сохранить изменения'
-                    : 'Добавить фильм'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

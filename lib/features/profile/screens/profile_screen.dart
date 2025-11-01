@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -19,9 +20,7 @@ class ProfileScreen extends StatelessWidget {
     required this.onAddMovie,
   });
 
-  void _logout(BuildContext context) {
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-  }
+  void _logout(BuildContext context) => context.go('/login');
 
   @override
   Widget build(BuildContext context) {

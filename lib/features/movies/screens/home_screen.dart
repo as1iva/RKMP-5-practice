@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 import 'package:fadeev_practice_5/features/movies/widgets/statistics_card.dart';
 import 'package:fadeev_practice_5/features/movies/widgets/movie_tile.dart';
-import 'package:fadeev_practice_5/features/movies/screens/movie_form_screen.dart';
 import 'package:fadeev_practice_5/shared/widgets/top_nav_actions.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -28,20 +29,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  void _showAddMovieDialog() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MovieFormScreen(
-          onSave: (movie) {
-            widget.onAddMovie(movie);
-            Navigator.pop(context);
-          },
-        ),
-      ),
-    );
-  }
-
   Widget _buildHomeTab() {
     final totalMovies = widget.movies.length;
     final watchedMovies = widget.movies.where((m) => m.isWatched).length;
@@ -50,19 +37,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final averageRating =
     rated.isEmpty ? 0.0 : rated.map((m) => m.rating!).reduce((a, b) => a + b) / rated.length;
 
-    final recentMovies = widget.movies.isEmpty
-        ? <Movie>[]
-        : (widget.movies.toList()
-      ..sort((a, b) => b.dateAdded.compareTo(a.dateAdded)))
-        .take(5)
-        .toList();
+    final moviesSorted = widget.movies.toList()
+      ..sort((a, b) {
+        final ad = a.dateAdded;
+        final bd = b.dateAdded;
+        return bd.compareTo(ad);
+      });
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Плитки статистики — строго столбиком сверху вниз
           StatisticsCard(
             title: 'Всего фильмов',
             value: '$totalMovies',
@@ -91,12 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.amber,
           ),
           const SizedBox(height: 24),
-          Text(
-            'Недавние добавления',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('Недавние добавления', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
-          if (recentMovies.isEmpty)
+          if (moviesSorted.isEmpty)
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -108,9 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: recentMovies.length,
+              itemCount: moviesSorted.length,
               itemBuilder: (context, index) {
-                final movie = recentMovies[index];
+                final movie = moviesSorted[index];
                 return MovieTile(
                   key: ValueKey(movie.id),
                   movie: movie,
@@ -135,21 +118,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Фильмотека'),
         backgroundColor: cs.inversePrimary,
-        actions: [
-          TopNavActions(
-            current: 'home',
-            movies: widget.movies,
-            onAddMovie: widget.onAddMovie,
-            onDeleteMovie: widget.onDeleteMovie,
-            onToggleWatched: widget.onToggleWatched,
-            onRateMovie: widget.onRateMovie,
-            onUpdateMovie: widget.onUpdateMovie,
-          ),
-        ],
+        actions: const [TopNavActions(current: 'home')],
       ),
       body: _buildHomeTab(),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddMovieDialog,
+        onPressed: () => context.push('/home/movie/new'),
         tooltip: 'Добавить фильм',
         child: const Icon(Icons.add),
       ),

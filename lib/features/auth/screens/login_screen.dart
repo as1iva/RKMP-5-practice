@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,10 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 8),
-                  Text(
-                    'Фильмотека',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  Text('Фильмотека', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _loginController,

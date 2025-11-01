@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
-import 'package:fadeev_practice_5/features/movies/screens/movie_detail_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class MovieTile extends StatelessWidget {
@@ -19,36 +19,20 @@ class MovieTile extends StatelessWidget {
     required this.onUpdate,
   });
 
-  void _showRatingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Оценить фильм'),
-        content: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(10, (index) {
-            final rating = index + 1;
-            final active = rating <= (movie.rating ?? 0);
-            return IconButton(
-              icon: Icon(
-                active ? Icons.star : Icons.star_border,
-                color: Colors.amber,
-              ),
-              onPressed: () {
-                onRate(rating);
-                Navigator.pop(context);
-              },
-            );
-          }),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
-          ),
-        ],
-      ),
-    );
+  void _navigateToDetail(BuildContext context) {
+    context.push('/home/movie/${movie.id}');
+  }
+
+  void _toggleWatched(bool value) {
+    onToggleWatched(value);
+  }
+
+  void _rateMovie(int rating) {
+    onRate(rating);
+  }
+
+  void _editMovie(BuildContext context) {
+    onUpdate(movie);
   }
 
   void _showDeleteConfirmation(BuildContext context) {
@@ -75,200 +59,190 @@ class MovieTile extends StatelessWidget {
     );
   }
 
-  void _navigateToDetail(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MovieDetailScreen(
-          movie: movie,
-          onDelete: onDelete,
-          onToggleWatched: onToggleWatched,
-          onRate: onRate,
-          onUpdate: onUpdate,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
-      color: cs.surface,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _navigateToDetail(context),
+    return InkWell(
+      onTap: () => _navigateToDetail(context),
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  if (movie.imageUrl != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: movie.imageUrl != null
-                          ? CachedNetworkImage(
-                        imageUrl: movie.imageUrl!,
-                        width: 60,
-                        height: 85,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          width: 60,
-                          height: 85,
-                          color: Colors.grey[900],
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          width: 60,
-                          height: 85,
-                          color: Colors.grey[800],
-                          child: const Icon(
-                            Icons.movie_outlined,
-                            color: Colors.white70,
-                            size: 32,
-                          ),
-                        ),
-                      )
-                          : Container(
-                        width: 60,
-                        height: 85,
-                        color: Colors.grey[800],
-                        child: const Icon(
-                          Icons.movie_outlined,
-                          color: Colors.white70,
-                          size: 32,
-                        ),
+              if (movie.imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: movie.imageUrl != null
+                      ? CachedNetworkImage(
+                    imageUrl: movie.imageUrl!,
+                    width: 60,
+                    height: 85,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      width: 60,
+                      height: 85,
+                      color: Colors.grey[900],
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     ),
-
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: movie.isWatched ? Colors.green : Colors.orange,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: Icon(
-                        movie.isWatched ? Icons.check : Icons.schedule,
-                        color: Colors.white,
-                        size: 12,
-                      ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 60,
+                      height: 85,
+                      color: Colors.grey[900],
+                      child: const Icon(Icons.broken_image),
                     ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(width: 16),
-
+                  )
+                      : const SizedBox.shrink(),
+                ),
+              if (movie.imageUrl != null) const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      movie.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: cs.onSurface,
-                        decoration: movie.isWatched
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      movie.director,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontStyle: FontStyle.italic,
-                        color: cs.onSurfaceVariant,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                    // Заголовок
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: cs.primaryContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        Expanded(
                           child: Text(
-                            movie.genre,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                        if (movie.rating != null) ...[
-                          const SizedBox(width: 8),
-                          const Icon(Icons.star, size: 14, color: Colors.amber),
-                          Text(
-                            movie.rating.toString(),
+                            movie.title,
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          movie.isWatched
+                              ? Icons.check_circle
+                              : Icons.check_circle_outline,
+                          color: movie.isWatched ? cs.primary : cs.outline,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Директор / жанр / длительность
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        if (movie.director.isNotEmpty)
+                          _Chip(icon: Icons.person_outline, text: movie.director),
+                        if (movie.genre.isNotEmpty)
+                          _Chip(icon: Icons.category_outlined, text: movie.genre),
+                        if (movie.durationMinutes != null)
+                          _Chip(
+                            icon: Icons.timer_outlined,
+                            text: '${movie.durationMinutes} мин',
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Описание
+                    if (movie.description != null &&
+                        movie.description!.isNotEmpty)
+                      Text(
+                        movie.description!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[400],
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                    const SizedBox(height: 10),
+
+                    // Рейтинг и действия
+                    Row(
+                      children: [
+                        // Рейтинг звёздами
+                        Wrap(
+                          spacing: 2,
+                          children: List.generate(10, (i) {
+                            final r = i + 1;
+                            final selected = (movie.rating ?? 0) >= r;
+                            return InkWell(
+                              onTap: () => _rateMovie(r),
+                              child: Icon(
+                                Icons.star,
+                                size: 18,
+                                color: selected ? Colors.amber : cs.outline,
+                              ),
+                            );
+                          }),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: movie.isWatched
+                              ? 'Снять просмотрено'
+                              : 'Отметить просмотрено',
+                          icon: Icon(
+                            movie.isWatched
+                                ? Icons.remove_red_eye
+                                : Icons.remove_red_eye_outlined,
+                          ),
+                          onPressed: () => _toggleWatched(!movie.isWatched),
+                        ),
+                        IconButton(
+                          tooltip: 'Редактировать',
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _editMovie(context),
+                        ),
+                        IconButton(
+                          tooltip: 'Удалить',
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () => _showDeleteConfirmation(context),
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: movie.isWatched
-                        ? 'Отметить как непросмотренный'
-                        : 'Просмотрен',
-                    icon: Icon(
-                      movie.isWatched
-                          ? Icons.check_circle
-                          : Icons.check_circle_outline,
-                      color:
-                      movie.isWatched ? Colors.greenAccent : Colors.green,
-                    ),
-                    onPressed: () => onToggleWatched(!movie.isWatched),
-                  ),
-                  IconButton(
-                    tooltip: 'Оценить',
-                    icon: const Icon(Icons.star, color: Colors.amber),
-                    onPressed: () => _showRatingDialog(context),
-                  ),
-                  IconButton(
-                    tooltip: 'Удалить',
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => _showDeleteConfirmation(context),
-                  ),
-                ],
-              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Chip({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey[900],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey[400]),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
       ),
     );
   }
