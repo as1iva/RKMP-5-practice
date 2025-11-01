@@ -3,12 +3,15 @@ import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 import 'package:fadeev_practice_5/features/movies/widgets/movie_tile.dart';
 import 'package:fadeev_practice_5/shared/widgets/empty_state.dart';
 
+enum _StatusFilter { all, watched, toWatch }
+
 class AllMoviesScreen extends StatefulWidget {
   final List<Movie> movies;
   final Function(String) onDeleteMovie;
   final Function(String, bool) onToggleWatched;
   final Function(String, int) onRateMovie;
   final Function(Movie) onUpdateMovie;
+  final Function(Movie) onAddMovie;
 
   const AllMoviesScreen({
     super.key,
@@ -17,6 +20,7 @@ class AllMoviesScreen extends StatefulWidget {
     required this.onToggleWatched,
     required this.onRateMovie,
     required this.onUpdateMovie,
+    required this.onAddMovie,
   });
 
   @override
@@ -24,143 +28,162 @@ class AllMoviesScreen extends StatefulWidget {
 }
 
 class _AllMoviesScreenState extends State<AllMoviesScreen> {
-  String _searchQuery = '';
-  String _selectedGenre = 'Все';
-  String _sortBy = 'dateAdded';
+  final _searchController = TextEditingController();
+  _StatusFilter _status = _StatusFilter.all;
+  double _minRating = 0;
 
-  List<Movie> get _filteredMovies {
-    var filtered = widget.movies.where((movie) {
-      final matchesSearch = movie.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          movie.director.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesGenre = _selectedGenre == 'Все' || movie.genre == _selectedGenre;
-      return matchesSearch && matchesGenre;
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Movie> _filtered() {
+    final q = _searchController.text.trim().toLowerCase();
+
+    final filtered = widget.movies.where((m) {
+      final matchesQuery = q.isEmpty
+          ? true
+          : (m.title.toLowerCase().contains(q) ||
+          (m.description?.toLowerCase().contains(q) ?? false));
+
+      final matchesStatus = switch (_status) {
+        _StatusFilter.all => true,
+        _StatusFilter.watched => m.isWatched,
+        _StatusFilter.toWatch => !m.isWatched,
+      };
+
+      final minInt = _minRating.round();
+      final matchesRating = minInt <= 0 ? true : ((m.rating ?? 0) >= minInt);
+
+      return matchesQuery && matchesStatus && matchesRating;
     }).toList();
 
-    switch (_sortBy) {
-      case 'title':
-        filtered.sort((a, b) => a.title.compareTo(b.title));
-        break;
-      case 'director':
-        filtered.sort((a, b) => a.director.compareTo(b.director));
-        break;
-      case 'rating':
-        filtered.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
-        break;
-      case 'dateAdded':
-      default:
-        filtered.sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
-    }
-
+    filtered.sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
     return filtered;
   }
 
-  List<String> get _genres {
-    final genres = widget.movies.map((movie) => movie.genre).toSet().toList();
-    genres.sort();
-    return ['Все', ...genres];
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      _status = _StatusFilter.all;
+      _minRating = 0;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredMovies = _filteredMovies;
+    final cs = Theme.of(context).colorScheme;
+    final movies = _filtered();
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Поиск по названию или режиссёру',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Все фильмы'),
+        backgroundColor: cs.inversePrimary,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                labelText: 'Поиск по названию',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                  tooltip: 'Очистить',
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedGenre,
-                      decoration: const InputDecoration(
-                        labelText: 'Жанр',
-                        border: OutlineInputBorder(),
-                        contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      items: _genres.map((genre) {
-                        return DropdownMenuItem(
-                          value: genre,
-                          child: Text(genre),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedGenre = value!;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _sortBy,
-                      decoration: const InputDecoration(
-                        labelText: 'Сортировка',
-                        border: OutlineInputBorder(),
-                        contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'dateAdded', child: Text('По дате')),
-                        DropdownMenuItem(value: 'title', child: Text('По названию')),
-                        DropdownMenuItem(value: 'director', child: Text('По режиссёру')),
-                        DropdownMenuItem(value: 'rating', child: Text('По оценке')),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Все'),
+                          selected: _status == _StatusFilter.all,
+                          onSelected: (_) => setState(() => _status = _StatusFilter.all),
+                        ),
+                        ChoiceChip(
+                          label: const Text('Просмотрено'),
+                          selected: _status == _StatusFilter.watched,
+                          onSelected: (_) => setState(() => _status = _StatusFilter.watched),
+                        ),
+                        ChoiceChip(
+                          label: const Text('В планах'),
+                          selected: _status == _StatusFilter.toWatch,
+                          onSelected: (_) => setState(() => _status = _StatusFilter.toWatch),
+                        ),
+                        TextButton.icon(
+                          onPressed: _resetFilters,
+                          icon: const Icon(Icons.restart_alt),
+                          label: const Text('Сбросить'),
+                        ),
                       ],
-                      onChanged: (value) {
-                        setState(() {
-                          _sortBy = value!;
-                        });
-                      },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_border),
+                        const SizedBox(width: 8),
+                        Text('Мин. оценка: ${_minRating.round()}'),
+                      ],
+                    ),
+                    Slider(
+                      value: _minRating,
+                      min: 0,
+                      max: 5,
+                      divisions: 5,
+                      label: _minRating.round().toString(),
+                      onChanged: (v) => setState(() => _minRating = v),
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
-        Expanded(
-          child: filteredMovies.isEmpty
-              ? const EmptyState(
-            icon: Icons.search_off,
-            title: 'Фильмы не найдены',
-            subtitle: 'Попробуйте изменить фильтры',
-          )
-              : ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            itemCount: filteredMovies.length,
-            itemBuilder: (context, index) {
-              final movie = filteredMovies[index];
-              return MovieTile(
-                key: ValueKey(movie.id),
-                movie: movie,
-                onDelete: () => widget.onDeleteMovie(movie.id),
-                onToggleWatched: (isWatched) =>
-                    widget.onToggleWatched(movie.id, isWatched),
-                onRate: (rating) =>
-                    widget.onRateMovie(movie.id, rating),
-                onUpdate: widget.onUpdateMovie,
-              );
-            },
+          Expanded(
+            child: movies.isEmpty
+                ? const EmptyState(
+              icon: Icons.movie_creation_outlined,
+              title: 'Ничего не найдено',
+              subtitle: 'Поменяйте фильтры или строку поиска',
+            )
+                : ListView.builder(
+              itemCount: movies.length,
+              itemBuilder: (context, index) {
+                final movie = movies[index];
+                return MovieTile(
+                  key: ValueKey(movie.id),
+                  movie: movie,
+                  onDelete: () => widget.onDeleteMovie(movie.id),
+                  onToggleWatched: (isWatched) =>
+                      widget.onToggleWatched(movie.id, isWatched),
+                  onRate: (rating) => widget.onRateMovie(movie.id, rating),
+                  onUpdate: widget.onUpdateMovie,
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

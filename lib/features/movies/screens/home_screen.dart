@@ -3,9 +3,7 @@ import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 import 'package:fadeev_practice_5/features/movies/widgets/statistics_card.dart';
 import 'package:fadeev_practice_5/features/movies/widgets/movie_tile.dart';
 import 'package:fadeev_practice_5/features/movies/screens/movie_form_screen.dart';
-import 'package:fadeev_practice_5/features/movies/screens/all_movies_screen.dart';
-import 'package:fadeev_practice_5/features/movies/screens/watched_movies_screen.dart';
-import 'package:fadeev_practice_5/features/movies/screens/to_watch_screen.dart';
+import 'package:fadeev_practice_5/shared/widgets/top_nav_actions.dart';
 
 class HomeScreen extends StatefulWidget {
   final List<Movie> movies;
@@ -30,10 +28,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
-
   void _showAddMovieDialog() {
     Navigator.push(
       context,
@@ -48,50 +42,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _getSelectedScreen() {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildHomeTab();
-      case 1:
-        return AllMoviesScreen(
-          movies: widget.movies,
-          onDeleteMovie: widget.onDeleteMovie,
-          onToggleWatched: widget.onToggleWatched,
-          onRateMovie: widget.onRateMovie,
-          onUpdateMovie: widget.onUpdateMovie,
-        );
-      case 2:
-        return WatchedMoviesScreen(
-          movies: widget.movies.where((m) => m.isWatched).toList(),
-          onDeleteMovie: widget.onDeleteMovie,
-          onToggleWatched: widget.onToggleWatched,
-          onRateMovie: widget.onRateMovie,
-          onUpdateMovie: widget.onUpdateMovie,
-        );
-      case 3:
-        return ToWatchScreen(
-          movies: widget.movies.where((m) => !m.isWatched).toList(),
-          onDeleteMovie: widget.onDeleteMovie,
-          onToggleWatched: widget.onToggleWatched,
-          onRateMovie: widget.onRateMovie,
-          onUpdateMovie: widget.onUpdateMovie,
-        );
-      default:
-        return _buildHomeTab();
-    }
-  }
-
   Widget _buildHomeTab() {
     final totalMovies = widget.movies.length;
     final watchedMovies = widget.movies.where((m) => m.isWatched).length;
     final toWatch = totalMovies - watchedMovies;
-    final averageRating = widget.movies.where((m) => m.rating != null).isEmpty
-        ? 0.0
-        : widget.movies
-        .where((m) => m.rating != null)
-        .map((m) => m.rating!)
-        .reduce((a, b) => a + b) /
-        widget.movies.where((m) => m.rating != null).length;
+    final rated = widget.movies.where((m) => m.rating != null).toList();
+    final averageRating =
+    rated.isEmpty ? 0.0 : rated.map((m) => m.rating!).reduce((a, b) => a + b) / rated.length;
 
     final recentMovies = widget.movies.isEmpty
         ? <Movie>[]
@@ -103,60 +60,48 @@ class _HomeScreenState extends State<HomeScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Статистика',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          // Плитки статистики — строго столбиком сверху вниз
+          StatisticsCard(
+            title: 'Всего фильмов',
+            value: '$totalMovies',
+            icon: Icons.movie_filter_outlined,
+            color: Colors.blue,
           ),
-          const SizedBox(height: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              StatisticsCard(
-                title: 'Всего фильмов',
-                value: totalMovies.toString(),
-                icon: Icons.movie_creation,
-                color: Colors.indigo,
-              ),
-              const SizedBox(height: 12),
-              StatisticsCard(
-                title: 'Просмотрено',
-                value: watchedMovies.toString(),
-                icon: Icons.check_circle,
-                color: Colors.green,
-              ),
-              const SizedBox(height: 12),
-              StatisticsCard(
-                title: 'Хочу посмотреть',
-                value: toWatch.toString(),
-                icon: Icons.schedule,
-                color: Colors.orange,
-              ),
-              const SizedBox(height: 12),
-              StatisticsCard(
-                title: 'Средняя оценка',
-                value: averageRating.toStringAsFixed(1),
-                icon: Icons.star,
-                color: Colors.amber,
-              ),
-            ],
+          const SizedBox(height: 12),
+          StatisticsCard(
+            title: 'Просмотренных',
+            value: '$watchedMovies',
+            icon: Icons.check_circle_outline,
+            color: Colors.green,
+          ),
+          const SizedBox(height: 12),
+          StatisticsCard(
+            title: 'В планах',
+            value: '$toWatch',
+            icon: Icons.schedule_outlined,
+            color: Colors.orange,
+          ),
+          const SizedBox(height: 12),
+          StatisticsCard(
+            title: 'Средняя оценка',
+            value: averageRating.toStringAsFixed(1),
+            icon: Icons.star,
+            color: Colors.amber,
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Недавно добавленные',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Text(
+            'Недавние добавления',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
           if (recentMovies.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text(
-                  'Фильмов пока нет\nДобавьте первый фильм',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Пока пусто — добавьте первый фильм',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             )
           else
@@ -172,8 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onDelete: () => widget.onDeleteMovie(movie.id),
                   onToggleWatched: (isWatched) =>
                       widget.onToggleWatched(movie.id, isWatched),
-                  onRate: (rating) =>
-                      widget.onRateMovie(movie.id, rating),
+                  onRate: (rating) => widget.onRateMovie(movie.id, rating),
                   onUpdate: widget.onUpdateMovie,
                 );
               },
@@ -185,38 +129,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Фильмотека'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: _getSelectedScreen(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onItemTapped,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Главная',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.movie_outlined),
-            selectedIcon: Icon(Icons.movie),
-            label: 'Все фильмы',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.check_circle_outline),
-            selectedIcon: Icon(Icons.check_circle),
-            label: 'Просмотрено',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.schedule_outlined),
-            selectedIcon: Icon(Icons.schedule),
-            label: 'Хочу посмотреть',
+        backgroundColor: cs.inversePrimary,
+        actions: [
+          TopNavActions(
+            current: 'home',
+            movies: widget.movies,
+            onAddMovie: widget.onAddMovie,
+            onDeleteMovie: widget.onDeleteMovie,
+            onToggleWatched: widget.onToggleWatched,
+            onRateMovie: widget.onRateMovie,
+            onUpdateMovie: widget.onUpdateMovie,
           ),
         ],
       ),
+      body: _buildHomeTab(),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddMovieDialog,
         tooltip: 'Добавить фильм',

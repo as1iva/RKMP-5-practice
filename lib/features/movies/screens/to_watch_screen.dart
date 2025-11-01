@@ -9,6 +9,7 @@ class ToWatchScreen extends StatelessWidget {
   final Function(String, bool) onToggleWatched;
   final Function(String, int) onRateMovie;
   final Function(Movie) onUpdateMovie;
+  final Function(Movie) onAddMovie;
 
   const ToWatchScreen({
     super.key,
@@ -17,34 +18,40 @@ class ToWatchScreen extends StatelessWidget {
     required this.onToggleWatched,
     required this.onRateMovie,
     required this.onUpdateMovie,
+    required this.onAddMovie,
   });
 
   @override
   Widget build(BuildContext context) {
-    final sortedMovies = movies.toList()
+    final toWatchMovies = movies.where((m) => !m.isWatched).toList()
       ..sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
 
-    return movies.isEmpty
-        ? const EmptyState(
-      icon: Icons.schedule_outlined,
-      title: 'Список пуст',
-      subtitle: 'Добавьте фильмы, которые хотите посмотреть',
-    )
-        : ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: sortedMovies.length,
-      itemBuilder: (context, index) {
-        final movie = sortedMovies[index];
-        return MovieTile(
-          key: ValueKey(movie.id),
-          movie: movie,
-          onDelete: () => onDeleteMovie(movie.id),
-          onToggleWatched: (isWatched) =>
-              onToggleWatched(movie.id, isWatched),
-          onRate: (rating) => onRateMovie(movie.id, rating),
-          onUpdate: onUpdateMovie,
-        );
-      },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('В планах'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: toWatchMovies.isEmpty
+          ? const EmptyState(
+        icon: Icons.schedule_outlined,
+        title: 'В планах пусто',
+        subtitle: 'Добавьте фильмы и отметьте их как непросмотренные',
+      )
+          : ListView.builder(
+        itemCount: toWatchMovies.length,
+        itemBuilder: (context, index) {
+          final movie = toWatchMovies[index];
+          return MovieTile(
+            key: ValueKey(movie.id),
+            movie: movie,
+            onDelete: () => onDeleteMovie(movie.id),
+            onToggleWatched: (isWatched) =>
+                onToggleWatched(movie.id, isWatched),
+            onRate: (rating) => onRateMovie(movie.id, rating),
+            onUpdate: onUpdateMovie,
+          );
+        },
+      ),
     );
   }
 }

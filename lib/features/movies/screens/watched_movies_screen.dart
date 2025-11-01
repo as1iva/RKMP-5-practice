@@ -9,6 +9,7 @@ class WatchedMoviesScreen extends StatelessWidget {
   final Function(String, bool) onToggleWatched;
   final Function(String, int) onRateMovie;
   final Function(Movie) onUpdateMovie;
+  final Function(Movie) onAddMovie;
 
   const WatchedMoviesScreen({
     super.key,
@@ -17,39 +18,41 @@ class WatchedMoviesScreen extends StatelessWidget {
     required this.onToggleWatched,
     required this.onRateMovie,
     required this.onUpdateMovie,
+    required this.onAddMovie,
   });
 
   @override
   Widget build(BuildContext context) {
-    final sortedMovies = movies.toList()
-      ..sort((a, b) {
-        if (a.dateWatched == null && b.dateWatched == null) return 0;
-        if (a.dateWatched == null) return 1;
-        if (b.dateWatched == null) return -1;
-        return b.dateWatched!.compareTo(a.dateWatched!);
-      });
+    final watchedMovies = movies.where((m) => m.isWatched).toList()
+      ..sort((a, b) => (b.dateWatched ?? b.dateAdded)
+          .compareTo(a.dateWatched ?? a.dateAdded));
 
-    return movies.isEmpty
-        ? const EmptyState(
-      icon: Icons.check_circle_outline,
-      title: 'Нет просмотренных фильмов',
-      subtitle: 'Отметьте фильмы как просмотренные',
-    )
-        : ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: sortedMovies.length,
-      itemBuilder: (context, index) {
-        final movie = sortedMovies[index];
-        return MovieTile(
-          key: ValueKey(movie.id),
-          movie: movie,
-          onDelete: () => onDeleteMovie(movie.id),
-          onToggleWatched: (isWatched) =>
-              onToggleWatched(movie.id, isWatched),
-          onRate: (rating) => onRateMovie(movie.id, rating),
-          onUpdate: onUpdateMovie,
-        );
-      },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Просмотрено'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: watchedMovies.isEmpty
+          ? const EmptyState(
+        icon: Icons.check_circle_outline,
+        title: 'Пока ничего не посмотрели',
+        subtitle: 'Отмечайте фильмы как просмотренные',
+      )
+          : ListView.builder(
+        itemCount: watchedMovies.length,
+        itemBuilder: (context, index) {
+          final movie = watchedMovies[index];
+          return MovieTile(
+            key: ValueKey(movie.id),
+            movie: movie,
+            onDelete: () => onDeleteMovie(movie.id),
+            onToggleWatched: (isWatched) =>
+                onToggleWatched(movie.id, isWatched),
+            onRate: (rating) => onRateMovie(movie.id, rating),
+            onUpdate: onUpdateMovie,
+          );
+        },
+      ),
     );
   }
 }
