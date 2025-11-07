@@ -1,6 +1,6 @@
 # fadeev_practice_5
 
-A new Flutter project for 5 and 6 practice
+A new Flutter project for 8 practice
 
 ## Getting Started
 
