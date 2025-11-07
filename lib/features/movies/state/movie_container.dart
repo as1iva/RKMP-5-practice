@@ -1,5 +1,5 @@
+import 'package:fadeev_practice_5/features/movies/di/service_locator.dart';
 import 'package:flutter/material.dart';
-import 'package:fadeev_practice_5/features/service/image_service.dart';
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 
 class MoviesContainer extends StatefulWidget {
@@ -23,21 +23,22 @@ class MoviesContainer extends StatefulWidget {
 }
 
 class _MoviesContainerState extends State<MoviesContainer> {
-  final List<Movie> _movies = [];
-  final ImageService _imageService = ImageService();
-
+  List<Movie> _movies = [];
 
   void _addMovie(Movie movie) async {
-    final imageUrl = await _imageService.getNextMovieImage();
+    final imageUrl = await Services.image.getNextMovieImage();
     final withImage = movie.copyWith(imageUrl: imageUrl);
 
-    setState(() => _movies.add(withImage));
+    setState(() {
+      _movies = [..._movies, withImage];
+    });
   }
 
   void _updateMovie(Movie updatedMovie) {
     setState(() {
       final index = _movies.indexWhere((movie) => movie.id == updatedMovie.id);
       if (index != -1) {
+        _movies = List.from(_movies);
         _movies[index] = updatedMovie;
       }
     });
@@ -47,11 +48,11 @@ class _MoviesContainerState extends State<MoviesContainer> {
     final movie = _movies.firstWhere((movie) => movie.id == id);
 
     if (movie.imageUrl != null) {
-      await _imageService.releaseImage(movie.imageUrl!);
+      await Services.image.releaseImage(movie.imageUrl!);
     }
 
     setState(() {
-      _movies.removeWhere((movie) => movie.id == id);
+      _movies = _movies.where((movie) => movie.id != id).toList();
     });
   }
 
@@ -59,6 +60,7 @@ class _MoviesContainerState extends State<MoviesContainer> {
     setState(() {
       final index = _movies.indexWhere((movie) => movie.id == id);
       if (index != -1) {
+        _movies = List.from(_movies);
         _movies[index].isWatched = isWatched;
         _movies[index].dateWatched = isWatched ? DateTime.now() : null;
       }
@@ -69,6 +71,7 @@ class _MoviesContainerState extends State<MoviesContainer> {
     setState(() {
       final index = _movies.indexWhere((movie) => movie.id == id);
       if (index != -1) {
+        _movies = List.from(_movies);
         _movies[index].rating = rating;
       }
     });

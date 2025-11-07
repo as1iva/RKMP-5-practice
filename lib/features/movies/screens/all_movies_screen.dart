@@ -1,23 +1,11 @@
+import 'package:fadeev_practice_5/features/movies/widgets/app_state_inherited_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:fadeev_practice_5/features/movies/models/movie.dart';
 import 'package:fadeev_practice_5/features/movies/widgets/movie_tile.dart';
 import 'package:fadeev_practice_5/shared/widgets/empty_state.dart';
 
 class AllMoviesScreen extends StatefulWidget {
-  final List<Movie> movies;
-  final Function(String) onDeleteMovie;
-  final Function(String, bool) onToggleWatched;
-  final Function(String, int) onRateMovie;
-  final Function(Movie) onUpdateMovie;
-
-  const AllMoviesScreen({
-    super.key,
-    required this.movies,
-    required this.onDeleteMovie,
-    required this.onToggleWatched,
-    required this.onRateMovie,
-    required this.onUpdateMovie,
-  });
+  const AllMoviesScreen({super.key});
 
   @override
   State<AllMoviesScreen> createState() => _AllMoviesScreenState();
@@ -28,8 +16,8 @@ class _AllMoviesScreenState extends State<AllMoviesScreen> {
   String _selectedGenre = 'Все';
   String _sortBy = 'dateAdded';
 
-  List<Movie> get _filteredMovies {
-    var filtered = widget.movies.where((movie) {
+  List<Movie> _getFilteredMovies(List<Movie> movies) {
+    var filtered = movies.where((movie) {
       final matchesSearch = movie.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           movie.director.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesGenre = _selectedGenre == 'Все' || movie.genre == _selectedGenre;
@@ -54,15 +42,24 @@ class _AllMoviesScreenState extends State<AllMoviesScreen> {
     return filtered;
   }
 
-  List<String> get _genres {
-    final genres = widget.movies.map((movie) => movie.genre).toSet().toList();
+  List<String> _getGenres(List<Movie> movies) {
+    final genres = movies.map((movie) => movie.genre).toSet().toList();
     genres.sort();
     return ['Все', ...genres];
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredMovies = _filteredMovies;
+    final appState = AppStateInheritedWidget.of(context);
+
+    if (appState == null) {
+      return const Scaffold(
+          body: Center(child: Text('Ошибка: AppState не найден'))
+      );
+    }
+
+    final filteredMovies = _getFilteredMovies(appState.movies);
+    final genres = _getGenres(appState.movies);
 
     return Column(
       children: [
@@ -94,7 +91,7 @@ class _AllMoviesScreenState extends State<AllMoviesScreen> {
                         contentPadding:
                         EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
-                      items: _genres.map((genre) {
+                      items: genres.map((genre) {
                         return DropdownMenuItem(
                           value: genre,
                           child: Text(genre),
@@ -150,12 +147,10 @@ class _AllMoviesScreenState extends State<AllMoviesScreen> {
               return MovieTile(
                 key: ValueKey(movie.id),
                 movie: movie,
-                onDelete: () => widget.onDeleteMovie(movie.id),
-                onToggleWatched: (isWatched) =>
-                    widget.onToggleWatched(movie.id, isWatched),
-                onRate: (rating) =>
-                    widget.onRateMovie(movie.id, rating),
-                onUpdate: widget.onUpdateMovie,
+                onDelete: () => appState.onDeleteMovie(movie.id),
+                onToggleWatched: (isWatched) => appState.onToggleWatched(movie.id, isWatched),
+                onRate: (rating) => appState.onRateMovie(movie.id, rating),
+                onUpdate: appState.onUpdateMovie,
               );
             },
           ),

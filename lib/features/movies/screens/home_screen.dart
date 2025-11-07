@@ -6,24 +6,10 @@ import 'package:fadeev_practice_5/features/movies/screens/movie_form_screen.dart
 import 'package:fadeev_practice_5/features/movies/screens/all_movies_screen.dart';
 import 'package:fadeev_practice_5/features/movies/screens/watched_movies_screen.dart';
 import 'package:fadeev_practice_5/features/movies/screens/to_watch_screen.dart';
+import 'package:fadeev_practice_5/features/movies/widgets/app_state_inherited_widget.dart';
 
 class HomeScreen extends StatefulWidget {
-  final List<Movie> movies;
-  final Function(Movie) onAddMovie;
-  final Function(String) onDeleteMovie;
-  final Function(String, bool) onToggleWatched;
-  final Function(String, int) onRateMovie;
-  final Function(Movie) onUpdateMovie;
-
-  const HomeScreen({
-    super.key,
-    required this.movies,
-    required this.onAddMovie,
-    required this.onDeleteMovie,
-    required this.onToggleWatched,
-    required this.onRateMovie,
-    required this.onUpdateMovie,
-  });
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -34,68 +20,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
-  void _showAddMovieDialog() {
-    Navigator.push(
-      context,
+  void _showAddMovieDialog(BuildContext context, AppStateInheritedWidget appState) {
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => MovieFormScreen(
           onSave: (movie) {
-            widget.onAddMovie(movie);
-            Navigator.pop(context);
+            appState.onAddMovie(movie);
+            Navigator.of(context).pop();
           },
         ),
       ),
     );
   }
 
-  Widget _getSelectedScreen() {
+  Widget _getSelectedScreen(AppStateInheritedWidget appState) {
     switch (_selectedIndex) {
       case 0:
-        return _buildHomeTab();
+        return _buildHomeTab(appState);
       case 1:
-        return AllMoviesScreen(
-          movies: widget.movies,
-          onDeleteMovie: widget.onDeleteMovie,
-          onToggleWatched: widget.onToggleWatched,
-          onRateMovie: widget.onRateMovie,
-          onUpdateMovie: widget.onUpdateMovie,
-        );
+        return AllMoviesScreen();
       case 2:
         return WatchedMoviesScreen(
-          movies: widget.movies.where((m) => m.isWatched).toList(),
-          onDeleteMovie: widget.onDeleteMovie,
-          onToggleWatched: widget.onToggleWatched,
-          onRateMovie: widget.onRateMovie,
-          onUpdateMovie: widget.onUpdateMovie,
+          movies: appState.movies.where((m) => m.isWatched).toList(),
+          onDeleteMovie: appState.onDeleteMovie,
+          onToggleWatched: appState.onToggleWatched,
+          onRateMovie: appState.onRateMovie,
+          onUpdateMovie: appState.onUpdateMovie,
         );
       case 3:
         return ToWatchScreen(
-          movies: widget.movies.where((m) => !m.isWatched).toList(),
-          onDeleteMovie: widget.onDeleteMovie,
-          onToggleWatched: widget.onToggleWatched,
-          onRateMovie: widget.onRateMovie,
-          onUpdateMovie: widget.onUpdateMovie,
+          movies: appState.movies.where((m) => !m.isWatched).toList(),
+          onDeleteMovie: appState.onDeleteMovie,
+          onToggleWatched: appState.onToggleWatched,
+          onRateMovie: appState.onRateMovie,
+          onUpdateMovie: appState.onUpdateMovie,
         );
       default:
-        return _buildHomeTab();
+        return _buildHomeTab(appState);
     }
   }
 
-  Widget _buildHomeTab() {
-    final totalMovies = widget.movies.length;
-    final watchedMovies = widget.movies.where((m) => m.isWatched).length;
+  Widget _buildHomeTab(AppStateInheritedWidget appState) {
+    final totalMovies = appState.movies.length;
+    final watchedMovies = appState.movies.where((m) => m.isWatched).length;
     final toWatch = totalMovies - watchedMovies;
-    final averageRating = widget.movies.where((m) => m.rating != null).isEmpty
+    final averageRating = appState.movies.where((m) => m.rating != null).isEmpty
         ? 0.0
-        : widget.movies
+        : appState.movies
         .where((m) => m.rating != null)
         .map((m) => m.rating!)
         .reduce((a, b) => a + b) /
-        widget.movies.where((m) => m.rating != null).length;
+        appState.movies.where((m) => m.rating != null).length;
 
-    final recentMovies = widget.movies.isEmpty
+    final recentMovies = appState.movies.isEmpty
         ? <Movie>[]
-        : (widget.movies.toList()
+        : (appState.movies.toList()
       ..sort((a, b) => b.dateAdded.compareTo(a.dateAdded)))
         .take(5)
         .toList();
@@ -169,12 +148,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 return MovieTile(
                   key: ValueKey(movie.id),
                   movie: movie,
-                  onDelete: () => widget.onDeleteMovie(movie.id),
+                  onDelete: () => appState.onDeleteMovie(movie.id),
                   onToggleWatched: (isWatched) =>
-                      widget.onToggleWatched(movie.id, isWatched),
+                      appState.onToggleWatched(movie.id, isWatched),
                   onRate: (rating) =>
-                      widget.onRateMovie(movie.id, rating),
-                  onUpdate: widget.onUpdateMovie,
+                      appState.onRateMovie(movie.id, rating),
+                  onUpdate: appState.onUpdateMovie,
                 );
               },
             ),
@@ -185,12 +164,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    final appState = AppStateInheritedWidget.of(context);
+
+    if (appState == null) {
+      return const Scaffold(
+        body: Center(child: Text('Ошибка: AppState не найден'))
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Фильмотека'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: _getSelectedScreen(),
+      body: _getSelectedScreen(appState),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
@@ -218,7 +206,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddMovieDialog,
+        onPressed: () {
+          _showAddMovieDialog(context, appState);
+        },
         tooltip: 'Добавить фильм',
         child: const Icon(Icons.add),
       ),

@@ -1,4 +1,4 @@
-import 'package:fadeev_practice_5/features/service/image_service.dart';
+import 'package:fadeev_practice_5/features/movies/di/service_locator.dart';
 import 'package:flutter/material.dart';
 
 import 'package:fadeev_practice_5/app.dart';
@@ -6,10 +6,9 @@ import 'package:fadeev_practice_5/app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final imageService = ImageService();
-  await imageService.initialize();
+  await setupServiceLocator();
 
-  imageService.preloadImagePool().catchError((e) {
+  Services.image.preloadImagePool().catchError((e) {
     print("Предзагрузка изображений не удалась (возможно, нет интернета): $e");
   });
 
